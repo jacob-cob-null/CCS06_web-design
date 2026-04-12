@@ -1,0 +1,28 @@
+{
+  "personalInfo": {
+    "name": "Lance Jacob",
+    "fullName": "Lance Jacob Silverio",
+    "role": "Computer Science Student | Aspiring Embedded AI Engineer",
+    "biography": "I am a Computer Science student and Data Lead passionate about building intelligent, data-driven solutions. I specialize in engineering robust data pipelines and architecting AI-powered systems, with experience ranging from research-focused data engineering to full-stack platform development. My work focuses on creating efficient, machine-learning-integrated applications that solve complex real-world challenges through data-informed innovation.",
+    "skills": [
+      "Python & JavaScript",
+      "Next.js & FastAPI",
+      "LangChain & AI Engines",
+      "PostgreSQL & Supabase",
+      "LLM Prompt Engineering",
+      "TailwindCSS & React"
+    ],
+    "education": [
+      {
+        "degree": "Bachelor's in Computer Science",
+        "school": "Angeles University Foundation",
+        "year": "2024 - 2028 (Expected)"
+      },
+      {
+        "degree": "Consistent College Scholar",
+        "school": "Dean's Lister (GPA: 3.7/4.0)",
+        "year": "Current"
+      }
+    ]
+  }
+}
