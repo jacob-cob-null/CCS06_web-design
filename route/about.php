@@ -1,30 +1,29 @@
 <?php
 // CONTROLLER
 require_once '../db/data_loader.php';
-$personalInfo = loadPersonalData();
+$content = loadSiteContent();
+$personalInfo = $content['personalInfo'] ?? [];
+$siteContent = $content['siteContent']['about'] ?? [];
+$navItems = $content['siteContent']['navigation'] ?? [];
 
-$pageTitle    = "About Me | Lance Jacob's Portfolio";
-$navItems = [
-    "Home" => "home.php",
-    "About" => "about.php",
-    "Contact" => "contact.php",
-    "Admin" => "admin.php"
-];
-
-$fullName         = $personalInfo['fullName'];
-$aboutHeading     = "About Me";
-$bioTitle         = "Engineering Data-Driven Solutions";
-$biography        = $personalInfo['biography'];
-$skillsHeading    = "Core Expertise";
-$skills           = $personalInfo['skills'];
-$educationHeading = "Education";
-$education        = $personalInfo['education'];
-$ctaHeading       = "Let's Build Something.";
-$ctaText          = "Contact Me &rarr;";
+$pageTitle = $siteContent['title'] ?? '';
+$fullName = $personalInfo['fullName'] ?? '';
+$aboutHeading = $siteContent['heading'] ?? '';
+$bioTitle = $siteContent['bioTitle'] ?? '';
+$biography = $personalInfo['biography'] ?? '';
+$skillsHeading = $siteContent['skillsHeading'] ?? '';
+$skills = $personalInfo['skills'] ?? [];
+$educationHeading = $siteContent['educationHeading'] ?? '';
+$education = $personalInfo['education'] ?? [];
+$ctaHeading = $siteContent['ctaHeading'] ?? '';
+$ctaText = $siteContent['ctaText'] ?? '';
+$footerPrefix = $siteContent['footerPrefix'] ?? '';
+$activeNavKey = 'about';
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,9 +31,22 @@ $ctaText          = "Contact Me &rarr;";
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .fade-in { animation: fadeIn 0.6s ease-out forwards; opacity: 0; transform: translateY(10px); }
-        .delay-100 { animation-delay: 100ms; }
-        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .delay-100 {
+            animation-delay: 100ms;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -43,9 +55,9 @@ $ctaText          = "Contact Me &rarr;";
 
     <nav class="w-full flex justify-center py-8 fade-in h-[100px] sticky top-0 z-50">
         <div class="flex gap-8 items-center px-8 py-3 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg transition-all">
-            <?php foreach ($navItems as $name => $link): ?>
-                <a href="<?php echo htmlspecialchars($link); ?>" class="text-sm font-medium transition-colors hover:text-white <?php echo $name === 'About' ? 'text-blue-400' : 'text-white/60'; ?>">
-                    <?php echo htmlspecialchars($name); ?>
+            <?php foreach ($navItems as $key => $item): ?>
+                <a href="<?php echo htmlspecialchars($item['href'] ?? ''); ?>" class="text-sm font-medium transition-colors hover:text-white <?php echo $key === $activeNavKey ? 'text-blue-400' : 'text-white/60'; ?>">
+                    <?php echo htmlspecialchars($item['label'] ?? ''); ?>
                 </a>
             <?php endforeach; ?>
         </div>
@@ -109,7 +121,7 @@ $ctaText          = "Contact Me &rarr;";
             <!-- Footer-like CTA -->
             <div class="w-full flex flex-col md:flex-row justify-between items-center gap-6 border-t border-white/10 pt-10">
                 <p class="text-blue-200/40 text-sm font-medium tracking-tight">
-                    &copy; <?php echo date("Y") . " " . $fullName; ?>
+                    <?php echo htmlspecialchars($footerPrefix); ?> <?php echo date("Y") . " " . htmlspecialchars($fullName); ?>
                 </p>
                 <div class="flex items-center gap-4">
                     <span class="text-white/60 text-sm"><?php echo $ctaHeading; ?></span>
@@ -121,4 +133,5 @@ $ctaText          = "Contact Me &rarr;";
         </div>
     </main>
 </body>
-</html>
+
+</html>

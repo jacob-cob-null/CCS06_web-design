@@ -1,27 +1,31 @@
 <?php
 // CONTROLLER
 require_once '../db/db_conn.php';
+require_once '../db/data_loader.php';
+$content = loadSiteContent();
+$siteContent = $content['siteContent']['admin'] ?? [];
+$navItems = $content['siteContent']['navigation'] ?? [];
 session_start();
 
 // Simple security check
-$admin_pass = "admin123";
+$admin_pass = $content['auth']['adminPassword'] ?? '';
 if (!isset($_SESSION['authenticated'])) {
     if (isset($_POST['password']) && $_POST['password'] === $admin_pass) {
         $_SESSION['authenticated'] = true;
     }
 }
 
-$pageTitle    = "Admin Records | Lance Jacob's Portfolio";
-$navItems = [
-    "Home" => "home.php",
-    "About" => "about.php",
-    "Contact" => "contact.php",
-    "Admin" => "admin.php"
-];
-
-$adminHeading = "Contact Records";
-$loginHeading = "Admin Access";
-$loginPrompt  = "Enter password to view records:";
+$pageTitle = $siteContent['title'] ?? '';
+$adminHeading = $siteContent['heading'] ?? '';
+$loginHeading = $siteContent['loginHeading'] ?? '';
+$loginPrompt = $siteContent['loginPrompt'] ?? '';
+$loginButton = $siteContent['loginButton'] ?? '';
+$logoutText = $siteContent['logoutText'] ?? '';
+$emptyState = $siteContent['emptyState'] ?? '';
+$deleteButton = $siteContent['deleteButton'] ?? '';
+$deletePrompt = $siteContent['deletePrompt'] ?? '';
+$passwordHint = $siteContent['passwordHint'] ?? '';
+$activeNavKey = 'admin';
 
 
 // Handle Deletion
@@ -44,7 +48,6 @@ if (isset($_SESSION['authenticated'])) {
     }
 }
 
-$logoutText = "Log Out";
 if (isset($_GET['logout'])) {
     session_destroy();
     header("Location: admin.php");
@@ -54,6 +57,7 @@ if (isset($_GET['logout'])) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,8 +65,18 @@ if (isset($_GET['logout'])) {
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .fade-in { animation: fadeIn 0.6s ease-out forwards; opacity: 0; transform: translateY(10px); }
-        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -71,9 +85,9 @@ if (isset($_GET['logout'])) {
 
     <nav class="w-full flex justify-center py-8 fade-in h-[100px] sticky top-0 z-50">
         <div class="flex gap-8 items-center px-8 py-3 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg transition-all">
-            <?php foreach ($navItems as $name => $link): ?>
-                <a href="<?php echo htmlspecialchars($link); ?>" class="text-sm font-medium transition-colors hover:text-white <?php echo $name === 'Admin' ? 'text-blue-400' : 'text-white/60'; ?>">
-                    <?php echo htmlspecialchars($name); ?>
+            <?php foreach ($navItems as $key => $item): ?>
+                <a href="<?php echo htmlspecialchars($item['href'] ?? ''); ?>" class="text-sm font-medium transition-colors hover:text-white <?php echo $key === $activeNavKey ? 'text-blue-400' : 'text-white/60'; ?>">
+                    <?php echo htmlspecialchars($item['label'] ?? ''); ?>
                 </a>
             <?php endforeach; ?>
         </div>
@@ -87,8 +101,8 @@ if (isset($_GET['logout'])) {
                 <form action="admin.php" method="POST" class="flex flex-col gap-4">
                     <p class="text-white/60 text-sm text-center mb-2"><?php echo $loginPrompt; ?></p>
                     <input type="password" name="password" required class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/80 transition-colors text-center text-sm shadow-inner focus:bg-white/[0.05]">
-                    <button type="submit" class="bg-blue-600/20 text-blue-300 font-medium py-3 rounded-xl hover:bg-blue-600/30 hover:text-white transition-colors text-sm border border-blue-500/30 mt-2 uppercase tracking-widest">Login</button>
-                    <p class="text-white/30 text-xs text-center mt-2">Hint: admin123</p>
+                    <button type="submit" class="bg-blue-600/20 text-blue-300 font-medium py-3 rounded-xl hover:bg-blue-600/30 hover:text-white transition-colors text-sm border border-blue-500/30 mt-2 uppercase tracking-widest"><?php echo htmlspecialchars($loginButton); ?></button>
+                    <p class="text-white/30 text-xs text-center mt-2"><?php echo htmlspecialchars($passwordHint); ?></p>
                 </form>
             </div>
         <?php else: ?>
@@ -108,7 +122,7 @@ if (isset($_GET['logout'])) {
                 <div class="grid grid-cols-1 gap-6">
                     <?php if (empty($records)): ?>
                         <div class="w-full py-16 text-center border border-white/10 rounded-3xl bg-white/[0.03] backdrop-blur-xl">
-                            <p class="text-white/50 text-sm">No messages found.</p>
+                            <p class="text-white/50 text-sm"><?php echo htmlspecialchars($emptyState); ?></p>
                         </div>
                     <?php endif; ?>
 
@@ -130,8 +144,8 @@ if (isset($_GET['logout'])) {
                             </div>
 
                             <div class="flex flex-col justify-start pt-2 min-w-[120px]">
-                                <a href="?delete=<?php echo $record['id']; ?>" onclick="return confirm('Delete this record?')" class="w-full py-3 px-4 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl text-xs text-center font-bold uppercase tracking-widest hover:bg-red-500/20 hover:text-red-300 transition-colors">
-                                    Delete
+                                <a href="?delete=<?php echo $record['id']; ?>" onclick='return confirm(<?php echo json_encode($deletePrompt); ?>)' class="w-full py-3 px-4 bg-red-500/10 text-red-400 border border-red-500/30 rounded-xl text-xs text-center font-bold uppercase tracking-widest hover:bg-red-500/20 hover:text-red-300 transition-colors">
+                                    <?php echo htmlspecialchars($deleteButton); ?>
                                 </a>
                             </div>
                         </div>
@@ -141,4 +155,5 @@ if (isset($_GET['logout'])) {
         <?php endif; ?>
     </main>
 </body>
+
 </html>

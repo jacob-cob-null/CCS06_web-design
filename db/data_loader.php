@@ -1,9 +1,11 @@
 <?php
+
 /**
- * Loads the personal information block from content.json
- * @return array The personal information associative array
+ * Loads the full content tree from content.json.
+ * @return array The decoded site content.
  */
-function loadPersonalData() {
+function loadSiteContent()
+{
     $jsonPath = __DIR__ . '/../data/content.json';
     if (!file_exists($jsonPath)) {
         die("Error: content.json not found at " . $jsonPath);
@@ -16,6 +18,15 @@ function loadPersonalData() {
         die("Error: Failed to parse content.json - " . json_last_error_msg());
     }
 
+    return $data;
+}
+
+/**
+ * Loads the personal information block from content.json.
+ * @return array The personal information associative array.
+ */
+function loadPersonalData()
+{
+    $data = loadSiteContent();
     return isset($data['personalInfo']) ? $data['personalInfo'] : [];
 }
-?>

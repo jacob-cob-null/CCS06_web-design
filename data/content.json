@@ -1,6 +1,6 @@
 {
   "personalInfo": {
-    "name": "Lance Jacob",
+    "name": "Lance Jacob Silverio",
     "fullName": "Lance Jacob Silverio",
     "role": "Computer Science Student | Aspiring Embedded AI Engineer",
     "biography": "I am a Computer Science student and Data Lead passionate about building intelligent, data-driven solutions. I specialize in engineering robust data pipelines and architecting AI-powered systems, with experience ranging from research-focused data engineering to full-stack platform development. My work focuses on creating efficient, machine-learning-integrated applications that solve complex real-world challenges through data-informed innovation.",
@@ -24,5 +24,70 @@
         "year": "Current"
       }
     ]
+  },
+  "siteContent": {
+    "navigation": {
+      "home": {
+        "label": "Home",
+        "href": "home.php"
+      },
+      "about": {
+        "label": "About",
+        "href": "about.php"
+      },
+      "contact": {
+        "label": "Contact",
+        "href": "contact.php"
+      },
+      "admin": {
+        "label": "Admin",
+        "href": "admin.php"
+      }
+    },
+    "home": {
+      "title": "Home | Lance Jacob's Portfolio",
+      "greeting": "Hello, I am",
+      "primaryCta": "Explore My Work",
+      "secondaryCta": "Get In Touch"
+    },
+    "about": {
+      "title": "About Me | Lance Jacob's Portfolio",
+      "heading": "About Me",
+      "bioTitle": "Engineering Data-Driven Solutions",
+      "skillsHeading": "Core Expertise",
+      "educationHeading": "Education",
+      "ctaHeading": "Let's Build Something.",
+      "ctaText": "Contact Me",
+      "footerPrefix": "©"
+    },
+    "contact": {
+      "title": "Contact | Lance Jacob's Portfolio",
+      "heading": "Get in Touch",
+      "subheading": "Have a question or want to work together?",
+      "labels": {
+        "name": "Full Name",
+        "email": "Email Address",
+        "message": "Your Message",
+        "submit": "Send Message"
+      },
+      "successMessage": "Thank you! Your message has been sent successfully.",
+      "errorMessage": "Oops! Something went wrong. Please try again.",
+      "returnHome": "Return Home"
+    },
+    "admin": {
+      "title": "Admin Records | Lance Jacob's Portfolio",
+      "heading": "Contact Records",
+      "loginHeading": "Admin Access",
+      "loginPrompt": "Enter password to view records:",
+      "loginButton": "Login",
+      "logoutText": "Log Out",
+      "emptyState": "No messages found.",
+      "deleteButton": "Delete",
+      "deletePrompt": "Delete this record?",
+      "passwordHint": "Hint: kfc"
+    }
+  },
+  "auth": {
+    "adminPassword": "chicken123"
   }
 }
