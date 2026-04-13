@@ -2,6 +2,49 @@
 // CONTROLLER
 require_once '../db/db_conn.php';
 require_once '../db/data_loader.php';
+
+function verifyTurnstileToken($secretKey, $token, $remoteIp)
+{
+    if ($token === '' || $secretKey === '') {
+        return false;
+    }
+
+    $payload = http_build_query([
+        'secret' => $secretKey,
+        'response' => $token,
+        'remoteip' => $remoteIp,
+    ]);
+
+    $responseBody = '';
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init('https://challenges.cloudflare.com/turnstile/v0/siteverify');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        $responseBody = curl_exec($ch);
+        curl_close($ch);
+    } else {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                'content' => $payload,
+                'timeout' => 10,
+            ],
+        ]);
+        $responseBody = @file_get_contents('https://challenges.cloudflare.com/turnstile/v0/siteverify', false, $context);
+    }
+
+    if (!$responseBody) {
+        return false;
+    }
+
+    $decoded = json_decode($responseBody, true);
+    return is_array($decoded) && !empty($decoded['success']);
+}
+
 $content = loadSiteContent();
 $siteContent = $content['siteContent']['contact'] ?? [];
 $navItems = $content['siteContent']['navigation'] ?? [];
@@ -10,26 +53,42 @@ $pageTitle = $siteContent['title'] ?? '';
 $contactHeading = $siteContent['heading'] ?? '';
 $contactSubheading = $siteContent['subheading'] ?? '';
 $formLabels = $siteContent['labels'] ?? [];
+$captchaContent = $siteContent['captcha'] ?? [];
 $successMessage = $siteContent['successMessage'] ?? '';
 $errorMessage = $siteContent['errorMessage'] ?? '';
 $returnHomeText = $siteContent['returnHome'] ?? '';
 $activeNavKey = 'contact';
 
+$captchaHeading = $captchaContent['heading'] ?? 'Human Verification';
+$captchaLabel = $captchaContent['label'] ?? 'Complete the captcha to continue';
+$captchaErrorMessage = $captchaContent['errorMessage'] ?? 'Incorrect CAPTCHA. Please try again.';
+$captchaSiteKey = $captchaContent['siteKey'] ?? '1x00000000000000000000AA';
+$captchaSecretKey = $captchaContent['secretKey'] ?? '1x0000000000000000000000000000000AA';
+
 $showThankYou = false;
 $showError = false;
+$showCaptchaError = false;
 
 // Handle Form Submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = mysqli_real_escape_string($conn, $_POST['name']);
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $message = mysqli_real_escape_string($conn, $_POST['message']);
+    $captchaToken = trim($_POST['cf-turnstile-response'] ?? '');
+    $remoteIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    $captchaValid = verifyTurnstileToken($captchaSecretKey, $captchaToken, $remoteIp);
 
-    $sql = "INSERT INTO contacts (name, email, message) VALUES ('$name', '$email', '$message')";
-
-    if (mysqli_query($conn, $sql)) {
-        $showThankYou = true;
+    if (!$captchaValid) {
+        $showCaptchaError = true;
     } else {
-        $showError = true;
+        $name = mysqli_real_escape_string($conn, $_POST['name']);
+        $email = mysqli_real_escape_string($conn, $_POST['email']);
+        $message = mysqli_real_escape_string($conn, $_POST['message']);
+
+        $sql = "INSERT INTO contacts (name, email, message) VALUES ('$name', '$email', '$message')";
+
+        if (mysqli_query($conn, $sql)) {
+            $showThankYou = true;
+        } else {
+            $showError = true;
+        }
     }
 }
 ?>
@@ -42,6 +101,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?></title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Mulish:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <style>
         .fade-in {
@@ -72,11 +132,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </nav>
 
-    <main class="w-full flex flex-col items-center px-6 md:px-12 py-12 max-w-2xl mx-auto fade-in h-[calc(100vh-100px)] overflow-y-auto relative z-10">
-        <h1 class="text-4xl md:text-5xl text-blue-400 font-bold mb-4 text-center tracking-tight" style="font-family: 'Mulish', sans-serif;">
+    <main class="w-full flex flex-col items-center px-4 md:px-8 py-8 max-w-2xl mx-auto fade-in min-h-[calc(100vh-100px)] h-[calc(100vh-100px)] justify-center relative z-10">
+        <h1 class="text-3xl md:text-4xl text-blue-400 font-bold mb-2 text-center tracking-tight" style="font-family: 'Mulish', sans-serif;">
             <?php echo $contactHeading; ?>
         </h1>
-        <p class="text-white/60 text-sm md:text-base text-center mb-10 font-light">
+        <p class="text-white/60 text-xs md:text-sm text-center mb-6 font-light">
             <?php echo $contactSubheading; ?>
         </p>
 
@@ -90,34 +150,82 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <p class="text-red-400 py-3 px-4 bg-red-900/20 border border-red-900/30 rounded-md text-sm mb-6 w-full text-center"><?php echo $errorMessage; ?></p>
             <?php endif; ?>
 
-            <form action="contact.php" method="POST" class="w-full flex flex-col gap-5 bg-white/[0.03] border border-white/10 p-10 rounded-3xl backdrop-blur-xl shadow-2xl">
-                <div class="flex flex-col gap-2">
+            <form id="contactForm" action="contact.php" method="POST" class="w-full flex flex-col gap-4 bg-white/[0.03] border border-white/10 p-6 md:p-8 rounded-3xl backdrop-blur-xl shadow-2xl">
+                <div class="flex flex-col gap-1">
                     <label class="text-blue-200/80 text-xs font-semibold uppercase tracking-wider text-left">
                         <?php echo htmlspecialchars($formLabels['name'] ?? ''); ?>
                     </label>
                     <input type="text" name="name" required class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/80 transition-colors text-sm focus:bg-white/[0.05]">
                 </div>
 
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-1">
                     <label class="text-blue-200/80 text-xs font-semibold uppercase tracking-wider text-left">
                         <?php echo htmlspecialchars($formLabels['email'] ?? ''); ?>
                     </label>
                     <input type="email" name="email" required class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/80 transition-colors text-sm focus:bg-white/[0.05]">
                 </div>
 
-                <div class="flex flex-col gap-2">
+                <div class="flex flex-col gap-1">
                     <label class="text-blue-200/80 text-xs font-semibold uppercase tracking-wider text-left">
                         <?php echo htmlspecialchars($formLabels['message'] ?? ''); ?>
                     </label>
                     <textarea name="message" rows="5" required class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/80 transition-colors text-sm resize-none focus:bg-white/[0.05]"></textarea>
                 </div>
 
-                <button type="submit" class="mt-4 bg-blue-600/20 text-blue-300 font-medium text-sm py-4 rounded-xl border border-blue-500/30 hover:bg-blue-600/30 hover:text-white transition-colors tracking-widest uppercase">
+                <div class="bg-black/20 border border-white/10 rounded-xl px-3 py-3">
+                    <p class="text-blue-200/80 text-xs font-semibold uppercase tracking-wider mb-2">
+                        <?php echo htmlspecialchars($captchaHeading); ?>
+                    </p>
+                    <label class="text-white/70 text-sm block mb-3">
+                        <?php echo htmlspecialchars($captchaLabel); ?>
+                    </label>
+                    <div id="contactTurnstile" class="cf-turnstile" data-sitekey="<?php echo htmlspecialchars($captchaSiteKey); ?>" data-theme="dark" data-execution="execute" data-callback="onTurnstileSuccess"></div>
+                    <?php if ($showCaptchaError): ?>
+                        <p class="text-red-400 text-xs mt-2"><?php echo htmlspecialchars($captchaErrorMessage); ?></p>
+                    <?php endif; ?>
+                </div>
+
+                <button type="submit" class="mt-3 bg-blue-600/20 text-blue-300 font-medium text-sm py-3 rounded-xl border border-blue-500/30 hover:bg-blue-600/30 hover:text-white transition-colors tracking-widest uppercase">
                     <?php echo htmlspecialchars($formLabels['submit'] ?? ''); ?>
                 </button>
             </form>
         <?php endif; ?>
     </main>
+
+    <script>
+        (function() {
+            var form = document.getElementById('contactForm');
+            var widgetSelector = '#contactTurnstile';
+            var isSubmittingAfterCaptcha = false;
+
+            if (!form) {
+                return;
+            }
+
+            window.onTurnstileSuccess = function() {
+                isSubmittingAfterCaptcha = true;
+                form.requestSubmit();
+            };
+
+            form.addEventListener('submit', function(event) {
+                if (isSubmittingAfterCaptcha) {
+                    return;
+                }
+
+                var tokenInput = form.querySelector('input[name="cf-turnstile-response"]');
+                var hasToken = tokenInput && tokenInput.value.trim() !== '';
+
+                if (hasToken) {
+                    return;
+                }
+
+                if (window.turnstile && typeof window.turnstile.execute === 'function') {
+                    event.preventDefault();
+                    window.turnstile.execute(widgetSelector);
+                }
+            });
+        })();
+    </script>
 </body>
 
 </html>

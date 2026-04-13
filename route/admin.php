@@ -8,24 +8,38 @@ $navItems = $content['siteContent']['navigation'] ?? [];
 session_start();
 
 // Simple security check
+$admin_user = $content['auth']['adminUsername'] ?? '';
 $admin_pass = $content['auth']['adminPassword'] ?? '';
-if (!isset($_SESSION['authenticated'])) {
-    if (isset($_POST['password']) && $_POST['password'] === $admin_pass) {
-        $_SESSION['authenticated'] = true;
-    }
-}
+$showAuthError = false;
 
 $pageTitle = $siteContent['title'] ?? '';
 $adminHeading = $siteContent['heading'] ?? '';
 $loginHeading = $siteContent['loginHeading'] ?? '';
 $loginPrompt = $siteContent['loginPrompt'] ?? '';
 $loginButton = $siteContent['loginButton'] ?? '';
+$loginError = $siteContent['loginError'] ?? 'Invalid username or password.';
 $logoutText = $siteContent['logoutText'] ?? '';
 $emptyState = $siteContent['emptyState'] ?? '';
 $deleteButton = $siteContent['deleteButton'] ?? '';
 $deletePrompt = $siteContent['deletePrompt'] ?? '';
 $passwordHint = $siteContent['passwordHint'] ?? '';
 $activeNavKey = 'admin';
+
+if (!isset($_SESSION['authenticated']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+
+    $isValidUsername = $username !== '' && hash_equals((string)$admin_user, $username);
+    $isValidPassword = $password !== '' && hash_equals((string)$admin_pass, $password);
+
+    if ($isValidUsername && $isValidPassword) {
+        session_regenerate_id(true);
+        $_SESSION['authenticated'] = true;
+    } else {
+        $showAuthError = true;
+        http_response_code(401);
+    }
+}
 
 
 // Handle Deletion
@@ -100,7 +114,13 @@ if (isset($_GET['logout'])) {
                 <h1 class="text-3xl text-blue-400 mb-6 text-center font-bold tracking-tight" style="font-family: 'Mulish', sans-serif;"><?php echo $loginHeading; ?></h1>
                 <form action="admin.php" method="POST" class="flex flex-col gap-4">
                     <p class="text-white/60 text-sm text-center mb-2"><?php echo $loginPrompt; ?></p>
-                    <input type="password" name="password" required class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/80 transition-colors text-center text-sm shadow-inner focus:bg-white/[0.05]">
+                    <?php if ($showAuthError): ?>
+                        <p class="text-red-300 text-xs text-center px-3 py-2 bg-red-900/20 border border-red-900/40 rounded-lg">
+                            <?php echo htmlspecialchars($loginError); ?>
+                        </p>
+                    <?php endif; ?>
+                    <input type="text" name="username" required class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/80 transition-colors text-center text-sm shadow-inner focus:bg-white/[0.05]" placeholder="Username">
+                    <input type="password" name="password" required class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/80 transition-colors text-center text-sm shadow-inner focus:bg-white/[0.05]" placeholder="Password">
                     <button type="submit" class="bg-blue-600/20 text-blue-300 font-medium py-3 rounded-xl hover:bg-blue-600/30 hover:text-white transition-colors text-sm border border-blue-500/30 mt-2 uppercase tracking-widest"><?php echo htmlspecialchars($loginButton); ?></button>
                     <p class="text-white/30 text-xs text-center mt-2"><?php echo htmlspecialchars($passwordHint); ?></p>
                 </form>
